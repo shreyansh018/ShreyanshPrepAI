@@ -1,1 +1,25 @@
 node_modules
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Firebase credentials
+**/serviceAccountKey.json
+**/*serviceAccount*.json
+
+# Dependencies
+node_modules/
+
+# Build files
+dist/
+build/
+.next/
+
+# Python
+.venv/
+venv/
+__pycache__/
+
+# Logs
+*.log
