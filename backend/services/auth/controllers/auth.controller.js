@@ -1,8 +1,6 @@
 import crypto from "crypto";
 
-import { getAuth } from "firebase-admin/auth";
-
-import { app } from "../configs/firebase.js";
+import { getFirebaseAuth } from "../configs/firebase.js";
 import User from "../model/user.model.js";
 import redis from "../../../shared/redis/redis.js";
 
@@ -26,7 +24,7 @@ export const login = async (req, res) => {
   try {
     const { token } = req.body;
 
-    const decoded = await getAuth(app).verifyIdToken(token);
+    const decoded = await getFirebaseAuth().verifyIdToken(token);
 
     let user = await User.findOne({
       firebaseUid: decoded.uid,

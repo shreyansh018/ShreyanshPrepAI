@@ -1,4 +1,5 @@
 import { getApps, initializeApp, cert } from "firebase-admin/app";
+import { getAuth } from "firebase-admin/auth";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 
@@ -30,11 +31,21 @@ const loadServiceAccount = () => {
   );
 };
 
-const serviceAccount = loadServiceAccount();
+let cachedAuth = null;
 
-export const app =
-  getApps().length > 0
-    ? getApps()[0]
-    : initializeApp({
-        credential: cert(serviceAccount),
-      });
+// Initialize lazily so the API can still boot and report /healthz while
+// credentials are being configured on a new deployment.
+export const getFirebaseAuth = () => {
+  if (cachedAuth) return cachedAuth;
+
+  const serviceAccount = loadServiceAccount();
+  const app =
+    getApps().length > 0
+      ? getApps()[0]
+      : initializeApp({
+          credential: cert(serviceAccount),
+        });
+
+  cachedAuth = getAuth(app);
+  return cachedAuth;
+};
