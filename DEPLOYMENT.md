@@ -36,8 +36,10 @@ Complete these external setup steps:
 
 ## Auto-deploy
 
-- Render auto-deploy is enabled for `main`.
-- Vercel environment variables are stored in the project, but Git auto-deploy was not connected because the Vercel account needs a GitHub login connection. Connect it from the Vercel project settings if desired.
+- Render auto-deploy is enabled for `main` and deploys `backend/`.
+- Vercel is connected to `shreyansh018/ShreyanshPrepAI` with production branch `main`.
+- Vercel builds from the `frontend/` root directory using `npm run build` and output directory `dist`.
+- Vercel environment variables are stored in the project for the Production environment.
 
 ## Free-tier notes
 
