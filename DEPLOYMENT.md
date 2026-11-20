@@ -17,22 +17,16 @@
 - CORS allows `https://shreyanshprepai.vercel.app` with credentials.
 - Frontend production deployment is live on Vercel.
 - The built frontend bundle points to the Render API URL, not localhost.
+- MongoDB connects successfully from the deployed backend.
+- Upstash Redis connects successfully from the deployed backend.
+- `GET /api/me` with a fake session returns `401 {"message":"Session Expired"}`, confirming the Redis session lookup path works.
+- All required Render environment variables are populated with non-placeholder values.
 
-## Required before the app is fully functional
+## Remaining external setup
 
-The backend was created with placeholder values for these Render environment variables:
+Do not paste credentials into chat or commit them.
 
-- `MONGODB_URL`
-- `REDIS_URL`
-- `FIREBASE_SERVICE_ACCOUNT`
-- `GROQ_API_KEY`
-- `YOUTUBE_API_KEY`
-- `RAZORPAY_KEY_ID`
-- `RAZORPAY_KEY_SECRET`
-
-Update them in the Render dashboard, then trigger a redeploy. Do not paste real credentials into chat or commit them.
-
-Also complete these external setup steps:
+Complete these external setup steps:
 
 1. Add `shreyanshprepai.vercel.app` to Firebase Authorized Domains.
 2. Restrict the Firebase web API key by HTTP referrer.
