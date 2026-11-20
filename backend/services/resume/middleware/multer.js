@@ -1,33 +1,18 @@
-import fs from "fs"
-import multer from "multer"
-const uploadPath = "./uploads"
+import multer from "multer";
 
-if(!fs.existsSync(uploadPath)){
-fs.mkdirSync(uploadPath)
-}
-
-const storage = multer.diskStorage({
-    destination:(req,file,cb)=>{
-      cb(null , uploadPath)
-    },
-    filename:(req,file,cb)=>{
-        cb(null , file.originalname)
-    }
-})
-
-
-const fileFilter = (req,file,cb)=>{
-    if(file.mimetype === "application/pdf"){
-        cb(null , true)
-    }else{
-        cb(new Error("Only PDF files are allowed") , false)
-    }
-}
-
+// Render and other free hosts use ephemeral filesystems, so keep the PDF in
+// memory and parse it directly instead of writing to ./uploads.
 export const upload = multer({
-    storage,
-    fileFilter,
-    limits:{
-        fileSize: 20 *1024 * 1024 
+  storage: multer.memoryStorage(),
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype === "application/pdf") {
+      cb(null, true);
+    } else {
+      cb(new Error("Only PDF files are allowed"), false);
     }
-})
+  },
+  limits: {
+    fileSize: 20 * 1024 * 1024,
+    files: 1,
+  },
+});

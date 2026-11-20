@@ -1,19 +1,13 @@
-import fs from "fs"
-import {PDFParse} from "pdf-parse"
-const extractText =async (filePath)=>{
-    const buffer = fs.readFileSync(filePath)
+import { PDFParse } from "pdf-parse";
 
-    const pdf = new PDFParse({
-        data:buffer
-    })
+const extractText = async (buffer) => {
+  if (!Buffer.isBuffer(buffer)) {
+    throw new Error("PDF buffer is required");
+  }
 
-    const result = await pdf.getText()
+  const pdf = new PDFParse({ data: buffer });
+  const result = await pdf.getText();
+  return result.text;
+};
 
-
-    return result.text
-}
-
-export default extractText
-
-
-
+export default extractText;

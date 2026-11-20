@@ -23,3 +23,9 @@ __pycache__/
 
 # Logs
 *.log
+
+# Vercel
+.vercel
+
+# Uploads
+backend/uploads/

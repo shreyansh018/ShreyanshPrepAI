@@ -1,12 +1,20 @@
-import express from "express"
-import { generateRoadmap, getAllRoadmap, getRoadmapbyId } from "../controllers/roadmap.controller.js"
+import express from "express";
 
-const roadmapRouter = express.Router()
+import { aiRateLimit } from "../../../shared/rate-limit/aiRateLimit.js";
+import {
+  generateRoadmap,
+  getAllRoadmap,
+  getRoadmapbyId,
+} from "../controllers/roadmap.controller.js";
 
-roadmapRouter.post("/generate" , generateRoadmap)
+const roadmapRouter = express.Router();
 
-roadmapRouter.get("/all" ,getAllRoadmap )
+roadmapRouter.post(
+  "/generate",
+  aiRateLimit({ prefix: "roadmap", limit: 8 }),
+  generateRoadmap,
+);
+roadmapRouter.get("/all", getAllRoadmap);
+roadmapRouter.get("/:id", getRoadmapbyId);
 
-roadmapRouter.get("/:id",getRoadmapbyId)
-
-export default roadmapRouter
+export default roadmapRouter;

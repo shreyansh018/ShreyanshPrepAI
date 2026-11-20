@@ -1,12 +1,38 @@
+import crypto from "crypto";
+
+import User from "../../auth/model/user.model.js";
+import redis from "../../../shared/redis/redis.js";
 import razorpay from "../configs/razorpay.js";
 import Billing from "../models/billing.model.js";
-import crypto from "crypto";
 
 const PLANS = {
   starter: {
     amount: 199,
     interviewCoins: 300,
   },
+};
+
+const SESSION_TTL = 60 * 60 * 24 * 7;
+
+const refreshSessionCoins = async (req, user) => {
+  const sessionId = req.cookies?.session;
+  if (!sessionId || !user) return;
+
+  try {
+    const rawSession = await redis.get(`session:${sessionId}`);
+    if (!rawSession) return;
+
+    const session = JSON.parse(rawSession);
+    session.interviewCoin = user.interviewCoin;
+    await redis.set(
+      `session:${sessionId}`,
+      JSON.stringify(session),
+      "EX",
+      SESSION_TTL,
+    );
+  } catch (error) {
+    console.error("Unable to refresh session coin count:", error.message);
+  }
 };
 
 export const createOrder = async (req, res) => {
@@ -64,12 +90,12 @@ export const verifyPayment = async (req, res) => {
       });
     }
 
-    const genSign = crypto
+    const generatedSignature = crypto
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
       .update(`${razorpay_order_id}|${razorpay_payment_id}`)
       .digest("hex");
 
-    if (genSign !== razorpay_signature) {
+    if (generatedSignature !== razorpay_signature) {
       payment.status = "failed";
       await payment.save();
       return res.status(400).json({
@@ -78,30 +104,59 @@ export const verifyPayment = async (req, res) => {
       });
     }
 
-    if (payment.status === "paid") {
+    // Atomically claim this order so duplicate callbacks cannot credit coins twice.
+    const claimedPayment = await Billing.findOneAndUpdate(
+      { _id: payment._id, status: "created" },
+      {
+        $set: {
+          status: "paid",
+          razorpayPaymentId: razorpay_payment_id,
+          razorpaySignature: razorpay_signature,
+        },
+      },
+      { new: true },
+    );
+
+    if (!claimedPayment) {
+      const existingUser = await User.findById(payment.userId).select(
+        "interviewCoin",
+      );
       return res.status(200).json({
         success: true,
         message: "Payment already verified",
+        interviewCoin: existingUser?.interviewCoin,
       });
     }
 
-    payment.status = "paid";
-    payment.razorpayPaymentId = razorpay_payment_id;
-    payment.razorpaySignature = razorpay_signature;
+    const user = await User.findById(claimedPayment.userId);
+    if (!user) {
+      console.error(
+        "Payment verified but user was not found:",
+        claimedPayment.userId,
+      );
+      return res.status(500).json({
+        success: false,
+        message: "Payment verified, but the user account could not be found",
+      });
+    }
 
-    await payment.save();
+    user.interviewCoin += claimedPayment.interviewCoins;
+    await user.save();
+    await refreshSessionCoins(req, user);
 
     return res.status(200).json({
       success: true,
       message: "Payment successful",
+      interviewCoin: user.interviewCoin,
     });
   } catch (error) {
     console.log(error);
 
     if (req.body?.razorpay_order_id) {
-      await Payment.findOneAndUpdate(
+      await Billing.findOneAndUpdate(
         {
           razorpayOrderId: req.body.razorpay_order_id,
+          status: "created",
         },
         {
           status: "failed",

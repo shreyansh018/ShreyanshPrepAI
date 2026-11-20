@@ -1,7 +1,40 @@
-import { initializeApp, cert } from "firebase-admin/app";
+import { getApps, initializeApp, cert } from "firebase-admin/app";
+import fs from "node:fs";
+import { fileURLToPath } from "node:url";
 
-import serviceAccount from "../serviceAccountKey.json" with { type: "json" };
+const loadServiceAccount = () => {
+  const inline = process.env.FIREBASE_SERVICE_ACCOUNT;
 
-export const app = initializeApp({
-  credential: cert(serviceAccount),
-});
+  if (inline) {
+    const value = inline.trim();
+    const json = value.startsWith("{")
+      ? value
+      : Buffer.from(value, "base64").toString("utf8");
+    return JSON.parse(json);
+  }
+
+  const candidates = [
+    process.env.FIREBASE_SERVICE_ACCOUNT_PATH,
+    fileURLToPath(new URL("../serviceAccountKey.json", import.meta.url)),
+    fileURLToPath(new URL("../../../../serviceAccountKey.json", import.meta.url)),
+  ].filter(Boolean);
+
+  for (const filePath of candidates) {
+    if (fs.existsSync(filePath)) {
+      return JSON.parse(fs.readFileSync(filePath, "utf8"));
+    }
+  }
+
+  throw new Error(
+    "Firebase Admin credentials are missing. Set FIREBASE_SERVICE_ACCOUNT in the environment.",
+  );
+};
+
+const serviceAccount = loadServiceAccount();
+
+export const app =
+  getApps().length > 0
+    ? getApps()[0]
+    : initializeApp({
+        credential: cert(serviceAccount),
+      });

@@ -148,17 +148,17 @@ function Billing({ user, setUser }) {
 
         handler: async (response) => {
           try {
-            // 5. Verify the payment on the backend
-            await api.post("/api/billing/verify", response);
-
-            // 6. Add coins only after successful verification
-            const coinRes = await api.post("/api/auth/add-coins", {
-              coins: selectedPlan.coins,
-            });
+            // 5. Verify the payment. Coins are credited server-side only
+            //    after the Razorpay signature is validated.
+            const verifyRes = await api.post(
+              "/api/billing/verify",
+              response,
+            );
 
             setUser((prev) => ({
               ...prev,
-              interviewCoin: coinRes.data.interviewCoin,
+              interviewCoin:
+                verifyRes.data?.interviewCoin ?? prev?.interviewCoin,
             }));
 
             alert("Payment Successful 🎉");
